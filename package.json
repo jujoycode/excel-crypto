@@ -1,0 +1,26 @@
+{
+  "name": "excel-crypto",
+  "version": "1.0.0",
+  "description": "Encrypt the xlsx file that was delivered in buffer form. (https://ecma-international.org/publications-and-standards/standards/ecma-376)",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "npx tsc",
+    "dev": "ts-node src/index.ts"
+  },
+  "keywords": [
+    "xlsx",
+    "encrypt",
+    "excel"
+  ],
+  "author": "_jujoycode",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.12.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "cfb": "^1.2.2",
+    "fast-xml-parser": "^4.4.1"
+  }
+}
