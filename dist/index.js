@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.XLSX_Encryptor = void 0;
+exports.XLSX_Cryptor = void 0;
 const crypto_1 = require("crypto");
 const cfb_1 = require("cfb");
 const cryptoUtil_1 = require("./utils/cryptoUtil");
@@ -11,7 +11,7 @@ const xmlUtil_1 = require("./utils/xmlUtil");
  * @link [MS Office File Format](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/cab78f5c-9c17-495e-bea9-032c63f02ad8)
  * @link [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/)
 */
-class XLSX_Encryptor {
+class XLSX_Cryptor {
     constructor() {
         this.packageKey = (0, crypto_1.randomBytes)(32);
         this.encPrefix = Buffer.from([0x04, 0x00, 0x04, 0x00, 0x40, 0x00, 0x00, 0x00]);
@@ -60,7 +60,7 @@ class XLSX_Encryptor {
         this.xmlTool = new xmlUtil_1.XmlUtil();
     }
     // Data Encrypt
-    encrypt(data, password) {
+    encrypt({ data, password }) {
         // 2. Package 암호화
         const encryptedPackage = this.cryptPackage('encrypt', this.objEncInfo.package.cipherAlgorithm, this.objEncInfo.package.cipherChaining, this.objEncInfo.package.hashAlgorithm, this.objEncInfo.package.blockSize, this.objEncInfo.package.salt, this.packageKey, data);
         // 3. 데이터 무결성 생성
@@ -202,4 +202,4 @@ class XLSX_Encryptor {
         return key;
     }
 }
-exports.XLSX_Encryptor = XLSX_Encryptor;
+exports.XLSX_Cryptor = XLSX_Cryptor;

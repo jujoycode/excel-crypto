@@ -4,7 +4,7 @@
  * @link [MS Office File Format](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/cab78f5c-9c17-495e-bea9-032c63f02ad8)
  * @link [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/)
 */
-export declare class XLSX_Encryptor {
+export declare class XLSX_Cryptor {
     private cryptoTool;
     private xmlTool;
     private packageKey;
@@ -14,7 +14,10 @@ export declare class XLSX_Encryptor {
     private objBlockKey;
     private objEncInfo;
     constructor();
-    encrypt(data: Buffer, password: string): Buffer;
+    encrypt({ data, password }: {
+        data: Buffer;
+        password: string;
+    }): Buffer;
     private crypt;
     private cryptPackage;
     private convertPasswordToKey;

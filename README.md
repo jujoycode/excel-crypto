@@ -1,43 +1,51 @@
+# excel-crypto
 
-# xlsx-encryption
-
-> Write your project description here
-
-- point1
-- point2
-- point3
+> xlsx encrypt/decrypt based on ECMA376
 
 ## Installation
 
 ```bash
 # npm
-npm install xlsx-encryption
+npm install excel-crypto
 
 # yarn
-yarn add xlsx-encryption
+yarn add excel-crypto
 
 # pnpm
-pnpm install xlsx-encryption
+pnpm install excel-crypto
 ```
 
 ## Usage
 
 ```bash
-# Write your project usage here
+# install package
+npm i excel-crypto
 ```
 
-## Document
+```typescript
+import { XLSX_Cryptor } from "excel-crypto";
+import { readFileSync } from "fs";
 
-- Write your document link and preview here
+const XlsxCryptor = new XLSX_Cryptor();
+
+// make Buffer
+const fileBuffer = readFileSync("./your_path");
+
+// get encrypt Buffer
+const encryptFile = XlsxCryptor.encrypt({
+  data: fileBuffer,
+  password: "your_password",
+});
+```
 
 ## Authors
 
-- Write your name - Write your role (ex. Project initial and development)
+- \_jujoycode - Project initial and development
 
 ## Version History
 
-- 0.0.1
-  - Write your version history here
+- 1.0.0
+  - ✨ Encrypt XLSX
 
 ## License
 

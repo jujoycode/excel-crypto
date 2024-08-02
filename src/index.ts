@@ -10,7 +10,7 @@ import { XmlUtil } from './utils/xmlUtil'
  * @link [MS Office File Format](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/cab78f5c-9c17-495e-bea9-032c63f02ad8)
  * @link [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/)
 */
-export class XLSX_Encryptor {
+export class XLSX_Cryptor {
   private cryptoTool: CryptoUtil
   private xmlTool: XmlUtil
 
@@ -65,7 +65,7 @@ export class XLSX_Encryptor {
   }
 
   // Data Encrypt
-  public encrypt(data: Buffer, password: string) {
+  public encrypt({ data, password }: { data: Buffer, password: string }) {
     // 2. Package 암호화
     const encryptedPackage = this.cryptPackage(
       'encrypt',
