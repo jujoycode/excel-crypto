@@ -19,10 +19,13 @@ pnpm install excel-crypto
 
 ```bash
 # install package
+
 npm i excel-crypto
 ```
 
-```typescript
+```javascript
+# example
+
 import { XLSX_Cryptor } from "excel-crypto";
 import { readFileSync } from "fs";
 

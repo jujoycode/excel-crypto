@@ -64,165 +64,59 @@ export class XLSX_Cryptor {
     this.xmlTool = new XmlUtil()
   }
 
-  // Data Encrypt
-  public encrypt({ data, password }: { data: Buffer, password: string }) {
-    // 2. Package 암호화
-    const encryptedPackage = this.cryptPackage(
-      'encrypt',
-      this.objEncInfo.package.cipherAlgorithm,
-      this.objEncInfo.package.cipherChaining,
-      this.objEncInfo.package.hashAlgorithm,
-      this.objEncInfo.package.blockSize,
-      this.objEncInfo.package.salt,
-      this.packageKey,
-      data
-    )
+  /**
+  * @desc 주어진 데이터와 비밀번호를 사용하여 xlsx 파일을 암호화합니다.
+  * @example
+  * const xlsxFile = readFileSync('./xlsxFile.xlsx')
+  * const encryptXlsx = new XLSX_Cryptor().encrypt({data: xlsxFile, password: 'P@ssw0rd1!'})
+  */
+  public encrypt({ data, password }: { data: Buffer, password: string }): Buffer {
+    // 0. CFB Container 생성
+    const cfbContainer = utils.cfb_new()
 
+    // 1. Package 암호화
+    const encryptedPackage = this.createEncryptedPackage(data)
+    utils.cfb_add(cfbContainer, 'EncryptedPackage', encryptedPackage)
 
-    // 3. 데이터 무결성 생성
-    // HMAC 키 생성
+    // 2. key 관련 정보 생성
+    const verifierHashInput = randomBytes(16)
+
+    this.objEncInfo.key.encryptedVerifierHashInput = this.createEncryptedVerifierHashInput(password, verifierHashInput)
+    this.objEncInfo.key.encryptedVerifierHashValue = this.createEncryptedVerifierHashValue(password, verifierHashInput)
+    this.objEncInfo.key.encryptedKeyValue = this.createEncryptedKeyValue(password)
+
+    // 3. 무결성 정보 생성
     const hmacKey = randomBytes(64)
 
-    // HMAC 키를 암호화하기 위한 초기화 벡터 생성
-    const hmacKeyIV = this.cryptoTool.createIV(
-      this.objEncInfo.package.hashAlgorithm,
-      this.objEncInfo.package.salt,
-      this.objEncInfo.package.blockSize,
-      this.objBlockKey.integrity.hmacKey,
-    );
-
-    // HMAC 키 암호화 실행
-    const encryptedHmacKey = this.crypt(
-      'encrypt', // 암호화 모드 설정
-      this.objEncInfo.package.cipherAlgorithm,
-      this.objEncInfo.package.cipherChaining,
-      this.packageKey,
-      hmacKeyIV,
-      hmacKey
-    );
-
-    // 암호화된 패키지에 대한 HMAC 값 계산
-    const hmacValue = this.cryptoTool.hmac(this.objEncInfo.package.hashAlgorithm, hmacKey, encryptedPackage);
-
-    // HMAC 값 암호화를 위한 초기화 벡터 생성
-    const hmacValueIV = this.cryptoTool.createIV(
-      this.objEncInfo.package.hashAlgorithm,
-      this.objEncInfo.package.salt,
-      this.objEncInfo.package.blockSize,
-      this.objBlockKey.integrity.hmacValue,
-    );
-
-    // HMAC 값 암호화 실행
-    const encryptedHmacValue = this.crypt(
-      'encrypt', // 암호화 모드 설정
-      this.objEncInfo.package.cipherAlgorithm,
-      this.objEncInfo.package.cipherChaining,
-      this.packageKey,
-      hmacValueIV,
-      hmacValue
-    );
-
-    // 암호화 정보 객체에 데이터 무결성 정보 저장
     this.objEncInfo.dataIntegrity = {
-      encryptedHmacKey,
-      encryptedHmacValue,
-    };
-
-    // 패스워드를 이용한 키 생성
-    const key = this.convertPasswordToKey(
-      password,
-      this.objEncInfo.key.hashAlgorithm,
-      this.objEncInfo.key.salt,
-      this.objEncInfo.key.spinCount,
-      this.objEncInfo.key.keyBits,
-      this.objBlockKey.key
-    );
-
-    // 패키지 키 암호화
-    this.objEncInfo.key.encryptedKeyValue = this.crypt(
-      'encrypt', // 암호화 모드 설정
-      this.objEncInfo.key.cipherAlgorithm,
-      this.objEncInfo.key.cipherChaining,
-      key,
-      this.objEncInfo.key.salt,
-      this.packageKey
-    );
-
-    // 검증 해시 입력 값 생성
-    const verifierHashInput = randomBytes(16);
-
-    // 검증 해시 입력 값에 대한 암호화 키 생성
-    const verifierHashInputKey = this.convertPasswordToKey(
-      password,
-      this.objEncInfo.key.hashAlgorithm,
-      this.objEncInfo.key.salt,
-      this.objEncInfo.key.spinCount,
-      this.objEncInfo.key.keyBits,
-      this.objBlockKey.verifierHash.input
-    );
-
-    // 검증 해시 입력 값 암호화
-    this.objEncInfo.key.encryptedVerifierHashInput = this.crypt(
-      'encrypt', // 암호화 모드 설정
-      this.objEncInfo.key.cipherAlgorithm,
-      this.objEncInfo.key.cipherChaining,
-      verifierHashInputKey,
-      this.objEncInfo.key.salt,
-      verifierHashInput
-    );
-
-    // 검증 해시 값 계산
-    const verifierHashValue = this.cryptoTool.hash(this.objEncInfo.key.hashAlgorithm, verifierHashInput);
-
-    // 검증 해시 값에 대한 암호화 키 생성
-    const verifierHashValueKey = this.convertPasswordToKey(
-      password,
-      this.objEncInfo.key.hashAlgorithm,
-      this.objEncInfo.key.salt,
-      this.objEncInfo.key.spinCount,
-      this.objEncInfo.key.keyBits,
-      this.objBlockKey.verifierHash.value
-    );
-
-    // 검증 해시 값 암호화
-    this.objEncInfo.key.encryptedVerifierHashValue = this.crypt(
-      'encrypt', // 암호화 모드 설정
-      this.objEncInfo.key.cipherAlgorithm,
-      this.objEncInfo.key.cipherChaining,
-      verifierHashValueKey,
-      this.objEncInfo.key.salt,
-      verifierHashValue
-    );
-
-    // 암호화 정보 XML 생성
-    const encryptionInfoXml = this.xmlTool.createEncXml(this.objEncInfo.package, this.objEncInfo.key, this.objEncInfo.dataIntegrity);
-
-    // 암호화 정보 XML과 Prefix를 결합하여 Buffer 생성
-    const encryptionInfoBuffer = Buffer.concat([this.encPrefix, Buffer.from(encryptionInfoXml, 'utf8')]);
-
-    // 새 CFB 컨테이너 생성
-    let output = utils.cfb_new();
-
-    // 컨테이너에 암호화 정보 및 암호화된 패키지 추가
-    utils.cfb_add(output, 'EncryptionInfo', encryptionInfoBuffer);
-    utils.cfb_add(output, 'EncryptedPackage', encryptedPackage);
-
-    // 불필요한 파일 삭제
-    utils.cfb_del(output, '\u0001Sh33tJ5');
-
-    // 컨테이너를 파일로 쓰기
-    const result = cfb_write(output);
-
-    // 결과가 Buffer가 아닐 경우 Buffer로 변환
-    if (!Buffer.isBuffer(result)) {
-      return Buffer.from(result)
+      encryptedHmacKey: this.createEncryptedHmacKey(hmacKey),
+      encryptedHmacValue: this.createEncryptedHmacValue(hmacKey, encryptedPackage),
     }
 
-    // 최종 결과 반환
-    return result;
+    // 4. 암호화 xml 생성
+    const encryptionInfoXml = this.xmlTool.createEncXml(this.objEncInfo.package, this.objEncInfo.key, this.objEncInfo.dataIntegrity)
+
+    // 5. Buffer로 변환 후 컨테이너에 추가
+    const encryptionInfoBuffer = Buffer.concat([this.encPrefix, Buffer.from(encryptionInfoXml, 'utf8')])
+    utils.cfb_add(cfbContainer, 'EncryptionInfo', encryptionInfoBuffer)
+
+    // Delete the SheetJS entry that is added at initialization
+    // utils.cfb_del(cfbContainer, '\u0001Sh33tJ5')
+
+    // 6. 결과 반환
+    const result = cfb_write(cfbContainer)
+    return Buffer.isBuffer(result) ? result : Buffer.from(result)
   }
 
-  // Data Enrypt / Decrypt
+  /**
+   * @param type 암복호화 여부
+   * @param cipherAlgorithm 사용할 암호 알고리즘
+   * @param cipherChaining 사용할 암호 연쇄 모드 ('ChainingModeCBC')
+   * @param key 암호화에 사용할 키
+   * @param iv 초기화 벡터
+   * @param input 암호화 또는 복호화할 데이터
+   * @desc 주어진 암호화 알고리즘과 연쇄 모드, 키, 초기화 벡터를 사용하여 데이터를 암호화하거나 복호화합니다.
+   */
   private crypt(type: 'encrypt' | 'decrypt', cipherAlgorithm: string, cipherChaining: string, key: Buffer, iv: Buffer, input: Buffer): Buffer {
     let algorithm = `${cipherAlgorithm.toLowerCase()}-${key.length * 8}`
 
@@ -238,83 +132,212 @@ export class XLSX_Cryptor {
     let output = cipher.update(input)
     output = Buffer.concat([output, cipher.final()])
 
-    return output;
+    return output
   }
 
-  // Package Encrypt / Decrypt
-  private cryptPackage(encrypt: 'encrypt' | 'decrypt', cipherAlgorithm: string, cipherChaining: string, hashAlgorithm: string, blockSize: number, salt: Buffer, key: Buffer, input: Buffer): Buffer {
-    const outputChunks = [];
-    const offset = encrypt ? 0 : this.iOffset;
+  /**
+  * @param encrypt 암복호화 여부
+  * @param cipherAlgorithm 사용할 암호 알고리즘
+  * @param cipherChaining 사용할 암호 연쇄 모드
+  * @param hashAlgorithm 사용할 해시 알고리즘
+  * @param blockSize 블록 크기
+  * @param salt
+  * @param key 암호화에 사용할 키
+  * @param input 암호화 또는 복호화할 데이터
+  * @desc 주어진 데이터를 블록 단위로 암호화하거나 복호화 
+  *       각 블록에 대해 초기화 벡터를 생성하고, 블록 단위로 데이터를 암호화 또는 복호화
+  */
+  private cryptPackage(type: 'encrypt' | 'decrypt', cipherAlgorithm: string, cipherChaining: string, hashAlgorithm: string, blockSize: number, salt: Buffer, key: Buffer, input: Buffer): Buffer {
+    const outputChunks = []
+    const offset = type === 'encrypt' ? 0 : this.iOffset
 
-    // The package is encoded in chunks. Encrypt/decrypt each and concat.
-    let i = 0;
-    let start = 0;
-    let end = 0;
+    // 패키지는 청크 단위로 인코딩, 각 청크를 암호화/복호화 후 연결
+    let i = 0
+    let start = 0
+    let end = 0
     while (end < input.length) {
-      start = end;
-      end = start + this.iChunkSize;
-      if (end > input.length) end = input.length;
+      start = end
+      end = start + this.iChunkSize
+      if (end > input.length) end = input.length
 
-      // Grab the next chunk using subarray instead of slice
-      let inputChunk = input.subarray(start + offset, end + offset);
+      // 다음 청크 획득
+      let inputChunk = input.subarray(start + offset, end + offset)
 
-      // Pad the chunk if it is not an integer multiple of the block size
-      const remainder = inputChunk.length % blockSize;
-      if (remainder) inputChunk = Buffer.concat([inputChunk, Buffer.alloc(blockSize - remainder)]);
+      // 블록 크기의 정수 배수가 아닐 경우 청크 패딩
+      const remainder = inputChunk.length % blockSize
+      if (remainder) inputChunk = Buffer.concat([inputChunk, Buffer.alloc(blockSize - remainder)])
 
-      // Create the initialization vector
-      const iv = this.cryptoTool.createIV(hashAlgorithm, salt, blockSize, i);
+      // 초기화 벡터 생성
+      const iv = this.cryptoTool.createIV(hashAlgorithm, salt, blockSize, i)
 
-      // Encrypt/decrypt the chunk and add it to the array
-      const outputChunk = this.crypt(encrypt, cipherAlgorithm, cipherChaining, key, iv, inputChunk);
+      // 청크 암호화/복호화 후 대상 추가
+      const outputChunk = this.crypt(type, cipherAlgorithm, cipherChaining, key, iv, inputChunk)
 
-      outputChunks.push(outputChunk);
+      outputChunks.push(outputChunk)
 
-      i++;
+      i++
     }
 
-    // Concat all of the output chunks.
-    let output = Buffer.concat(outputChunks);
+    // 모든 출력 청크를 연결합니다.
+    let output = Buffer.concat(outputChunks)
 
-    if (encrypt) {
-      // Put the length of the package in the first 8 bytes
-      output = Buffer.concat([this.cryptoTool.createUInt32LEBuffer(input.length, this.iOffset), output]);
+    if (type === 'encrypt') {
+      output = Buffer.concat([this.cryptoTool.createUInt32LEBuffer(input.length, this.iOffset), output])
     } else {
-      // Truncate the buffer to the size in the prefix using subarray
-      const length = input.readUInt32LE(0);
-      output = output.subarray(0, length);
+      const length = input.readUInt32LE(0)
+      output = output.subarray(0, length)
     }
 
-    return output;
+    return output
   }
 
-  // Convert a password into an encryption key
+  /**
+  * @param password 사용자 입력 비밀번호
+  * @param hashAlgorithm 사용할 해시 알고리즘
+  * @param salt
+  * @param spinCount 해시 재생성 횟수
+  * @param keyBits 키의 비트 길이
+  * @param blockKey 블록 키
+  * @desc 주어진 비밀번호를 사용하여 암호화 키를 생성
+  *       초기 해시를 생성 후 spinCount 횟수만큼 재생성
+  */
   private convertPasswordToKey(password: string, hashAlgorithm: string, salt: Buffer, spinCount: number, keyBits: number, blockKey: Buffer): Buffer {
-    // Password must be in unicode buffer
-    const passwordBuffer = Buffer.from(password, 'utf16le');
+    // 비밀번호를 유니코드 버퍼로 변환
+    const passwordBuffer = Buffer.from(password, 'utf16le')
 
-    // Generate the initial hash
-    let key = this.cryptoTool.hash(hashAlgorithm, salt, passwordBuffer);
+    // 초기 해시를 생성
+    let key = this.cryptoTool.hash(hashAlgorithm, salt, passwordBuffer)
 
-    // Now regenerate until spin count
+    // spinCount 횟수만큼 재생성
     for (let i = 0; i < spinCount; i++) {
-      const iterator = this.cryptoTool.createUInt32LEBuffer(i);
-      key = this.cryptoTool.hash(hashAlgorithm, iterator, key);
+      const iterator = this.cryptoTool.createUInt32LEBuffer(i)
+      key = this.cryptoTool.hash(hashAlgorithm, iterator, key)
     }
 
-    // Now generate the final hash
-    key = this.cryptoTool.hash(hashAlgorithm, key, blockKey);
+    // 최종 해시를 생성
+    key = this.cryptoTool.hash(hashAlgorithm, key, blockKey)
 
-    // Truncate or pad as needed to get to length of keyBits
-    const keyBytes = keyBits / 8;
+    // keyBits 길이에 맞게 키를 자르거나 패딩
+    const keyBytes = keyBits / 8
     if (key.length < keyBytes) {
-      const tmp = Buffer.alloc(keyBytes, 0x36);
-      key.copy(tmp);
-      key = tmp;
+      const tmp = Buffer.alloc(keyBytes, 0x36)
+      key.copy(tmp)
+      key = tmp
     } else if (key.length > keyBytes) {
-      key = key.subarray(0, keyBytes);
+      key = key.subarray(0, keyBytes)
     }
 
-    return key;
+    return key
   }
+
+  private createEncryptedPackage(data: Buffer): Buffer {
+    return this.cryptPackage(
+      'encrypt',
+      this.objEncInfo.package.cipherAlgorithm,
+      this.objEncInfo.package.cipherChaining,
+      this.objEncInfo.package.hashAlgorithm,
+      this.objEncInfo.package.blockSize,
+      this.objEncInfo.package.salt,
+      this.packageKey,
+      data
+    )
+  }
+
+  private createEncryptedHmacKey(hmacKey: Buffer): Buffer {
+    const hmacKeyIV = this.cryptoTool.createIV(
+      this.objEncInfo.package.hashAlgorithm,
+      this.objEncInfo.package.salt,
+      this.objEncInfo.package.blockSize,
+      this.objBlockKey.integrity.hmacKey,
+    )
+
+    return this.crypt(
+      'encrypt',
+      this.objEncInfo.package.cipherAlgorithm,
+      this.objEncInfo.package.cipherChaining,
+      this.packageKey,
+      hmacKeyIV,
+      hmacKey
+    )
+  }
+
+  private createEncryptedHmacValue(hmacKey: Buffer, encryptedPackage: Buffer): Buffer {
+    const hmacValue = this.cryptoTool.hmac(this.objEncInfo.package.hashAlgorithm, hmacKey, encryptedPackage)
+
+    const hmacValueIV = this.cryptoTool.createIV(
+      this.objEncInfo.package.hashAlgorithm,
+      this.objEncInfo.package.salt,
+      this.objEncInfo.package.blockSize,
+      this.objBlockKey.integrity.hmacValue,
+    )
+
+    return this.crypt(
+      'encrypt',
+      this.objEncInfo.package.cipherAlgorithm,
+      this.objEncInfo.package.cipherChaining,
+      this.packageKey,
+      hmacValueIV,
+      hmacValue
+    )
+  }
+
+  private createEncryptedKeyValue(password: string): Buffer {
+    const key = this.convertPasswordToKey(
+      password,
+      this.objEncInfo.key.hashAlgorithm,
+      this.objEncInfo.key.salt,
+      this.objEncInfo.key.spinCount,
+      this.objEncInfo.key.keyBits,
+      this.objBlockKey.key
+    )
+
+    return this.crypt(
+      'encrypt',
+      this.objEncInfo.key.cipherAlgorithm,
+      this.objEncInfo.key.cipherChaining,
+      key,
+      this.objEncInfo.key.salt,
+      this.packageKey
+    )
+  }
+  private createEncryptedVerifierHashInput(password: string, verifierHashInput: Buffer): Buffer {
+    const verifierHashInputKey = this.convertPasswordToKey(
+      password,
+      this.objEncInfo.key.hashAlgorithm,
+      this.objEncInfo.key.salt,
+      this.objEncInfo.key.spinCount,
+      this.objEncInfo.key.keyBits,
+      this.objBlockKey.verifierHash.input
+    )
+
+    return this.crypt(
+      'encrypt',
+      this.objEncInfo.key.cipherAlgorithm,
+      this.objEncInfo.key.cipherChaining,
+      verifierHashInputKey,
+      this.objEncInfo.key.salt,
+      verifierHashInput
+    )
+  }
+
+  private createEncryptedVerifierHashValue(password: string, verifierHashInput: Buffer): Buffer {
+    const verifierHashValueKey = this.convertPasswordToKey(
+      password,
+      this.objEncInfo.key.hashAlgorithm,
+      this.objEncInfo.key.salt,
+      this.objEncInfo.key.spinCount,
+      this.objEncInfo.key.keyBits,
+      this.objBlockKey.verifierHash.value
+    )
+
+    return this.crypt(
+      'encrypt',
+      this.objEncInfo.key.cipherAlgorithm,
+      this.objEncInfo.key.cipherChaining,
+      verifierHashValueKey,
+      this.objEncInfo.key.salt,
+      this.cryptoTool.hash(this.objEncInfo.key.hashAlgorithm, verifierHashInput)
+    )
+  }
+
 }
