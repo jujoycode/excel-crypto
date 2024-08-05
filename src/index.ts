@@ -100,9 +100,6 @@ export class XLSX_Cryptor {
     const encryptionInfoBuffer = Buffer.concat([this.encPrefix, Buffer.from(encryptionInfoXml, 'utf8')])
     utils.cfb_add(cfbContainer, 'EncryptionInfo', encryptionInfoBuffer)
 
-    // Delete the SheetJS entry that is added at initialization
-    // utils.cfb_del(cfbContainer, '\u0001Sh33tJ5')
-
     // 6. 결과 반환
     const result = cfb_write(cfbContainer)
     return Buffer.isBuffer(result) ? result : Buffer.from(result)
