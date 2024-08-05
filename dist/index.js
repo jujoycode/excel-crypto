@@ -10,6 +10,8 @@ const xmlUtil_1 = require("./utils/xmlUtil");
  * @desc ECMA 376 형식에 맞춘 xlsx 파일의 암호화 지원
  * @link [MS Office File Format](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/cab78f5c-9c17-495e-bea9-032c63f02ad8)
  * @link [ECMA-376](https://ecma-international.org/publications-and-standards/standards/ecma-376/)
+ * @link 참고1. [xlsx-populate](https://www.npmjs.com/package/xlsx-populate)
+ * @link 참고2. [officecrypto-tool](https://www.npmjs.com/package/officecrypto-tool)
 */
 class XLSX_Cryptor {
     constructor() {
@@ -30,13 +32,13 @@ class XLSX_Cryptor {
         };
         this.objEncInfo = {
             package: {
-                cipherAlgorithm: 'AES', // 사용할 암호화 알고리즘
-                cipherChaining: 'ChainingModeCBC', // 암호화 체인 모드
-                salt: (0, crypto_1.randomBytes)(16), // 솔트 값 생성
-                hashAlgorithm: 'SHA512', // 해시 알고리즘
-                hashSize: 64, // 해시 크기
-                blockSize: 16, // 블록 크기
-                keyBits: this.packageKey.length * 8, // 키 비트 수
+                cipherAlgorithm: 'AES',
+                cipherChaining: 'ChainingModeCBC',
+                salt: (0, crypto_1.randomBytes)(16),
+                hashAlgorithm: 'SHA512',
+                hashSize: 64,
+                blockSize: 16,
+                keyBits: this.packageKey.length * 8,
             },
             key: {
                 cipherAlgorithm: 'AES',
@@ -45,8 +47,8 @@ class XLSX_Cryptor {
                 hashAlgorithm: 'SHA512',
                 hashSize: 64,
                 blockSize: 16,
-                spinCount: 100000, // 해시 반복 횟수
-                keyBits: 256, // 암호화 키는 최대 255자
+                spinCount: 500,
+                keyBits: 256,
                 encryptedKeyValue: undefined,
                 encryptedVerifierHashInput: undefined,
                 encryptedVerifierHashValue: undefined,
@@ -87,8 +89,6 @@ class XLSX_Cryptor {
         // 5. Buffer로 변환 후 컨테이너에 추가
         const encryptionInfoBuffer = Buffer.concat([this.encPrefix, Buffer.from(encryptionInfoXml, 'utf8')]);
         cfb_1.utils.cfb_add(cfbContainer, 'EncryptionInfo', encryptionInfoBuffer);
-        // Delete the SheetJS entry that is added at initialization
-        // utils.cfb_del(cfbContainer, '\u0001Sh33tJ5')
         // 6. 결과 반환
         const result = (0, cfb_1.write)(cfbContainer);
         return Buffer.isBuffer(result) ? result : Buffer.from(result);
