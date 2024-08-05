@@ -17,12 +17,6 @@ pnpm install excel-crypto
 
 ## Usage
 
-```bash
-# install package
-
-npm i excel-crypto
-```
-
 ```javascript
 # example
 
@@ -46,6 +40,10 @@ const encryptFile = XlsxCryptor.encrypt({
 - \_jujoycode - Project initial and development
 
 ## Version History
+
+- 1.0.1
+
+  - 🔨 build with esBuild (`Bundling`, `Minify`, `Tree Shaking`)
 
 - 1.0.0
   - ✨ Encrypt XLSX
