@@ -10,10 +10,8 @@ export declare class XLSX_Cryptor {
     private cryptoTool;
     private xmlTool;
     private packageKey;
-    private encPrefix;
     private iChunkSize;
     private iOffset;
-    private objBlockKey;
     private objEncInfo;
     constructor();
     /**

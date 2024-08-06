@@ -1,6 +1,6 @@
 {
   "name": "excel-crypto",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Encrypt the xlsx file that was delivered in buffer form. (https://ecma-international.org/publications-and-standards/standards/ecma-376)",
   "main": "dist/index.js",
   "scripts": {

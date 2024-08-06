@@ -3,6 +3,14 @@ import { utils, write as cfb_write } from 'cfb'
 
 import { CryptoUtil } from './utils/cryptoUtil'
 import { XmlUtil } from './utils/xmlUtil'
+import {
+  ENC_PREFIX,
+  BLOCK_KEY,
+  VERSION,
+  PRIMARY,
+  DATASPACE_MAP,
+  STRONT_ENCRYPTION_DATASPACE
+} from './constants/resource'
 
 /**
  * ECMA376_Encryptor
@@ -17,21 +25,9 @@ export class XLSX_Cryptor {
   private xmlTool: XmlUtil
 
   private packageKey = randomBytes(32)
-  private encPrefix = Buffer.from([0x04, 0x00, 0x04, 0x00, 0x40, 0x00, 0x00, 0x00])
   private iChunkSize = 4096
   private iOffset = 8
 
-  private objBlockKey = {
-    key: Buffer.from([0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6]),
-    integrity: {
-      hmacKey: Buffer.from([0x5f, 0xb2, 0xad, 0x01, 0x0c, 0xb9, 0xe1, 0xf6]),
-      hmacValue: Buffer.from([0xa0, 0x67, 0x7f, 0x02, 0xb2, 0x2c, 0x84, 0x33]),
-    },
-    verifierHash: {
-      input: Buffer.from([0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79]),
-      value: Buffer.from([0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e]),
-    }
-  }
   private objEncInfo = {
     package: {
       cipherAlgorithm: 'AES',
@@ -99,8 +95,16 @@ export class XLSX_Cryptor {
     const encryptionInfoXml = this.xmlTool.createEncXml(this.objEncInfo.package, this.objEncInfo.key, this.objEncInfo.dataIntegrity)
 
     // 5. Buffer로 변환 후 컨테이너에 추가
-    const encryptionInfoBuffer = Buffer.concat([this.encPrefix, Buffer.from(encryptionInfoXml, 'utf8')])
+    const encryptionInfoBuffer = Buffer.concat([ENC_PREFIX, Buffer.from(encryptionInfoXml, 'utf8')])
     utils.cfb_add(cfbContainer, 'EncryptionInfo', encryptionInfoBuffer)
+
+    // 5-1. _DataSpace 생성
+    utils.cfb_add(cfbContainer, '\x06DataSpaces/', null)
+
+    utils.cfb_add(cfbContainer, '\x06DataSpaces/DataSpaceMap', DATASPACE_MAP)
+    utils.cfb_add(cfbContainer, '\x06DataSpaces/Version', VERSION)
+    utils.cfb_add(cfbContainer, '\x06DataSpaces/DataSpaceInfo/StrongEncryptionDataSpace', STRONT_ENCRYPTION_DATASPACE)
+    utils.cfb_add(cfbContainer, '\x06DataSpaces/TransformInfo/StrongEncryptionTransform/\x06Primary', PRIMARY)
 
     // 6. 결과 반환
     const result = cfb_write(cfbContainer)
@@ -249,7 +253,7 @@ export class XLSX_Cryptor {
       this.objEncInfo.package.hashAlgorithm,
       this.objEncInfo.package.salt,
       this.objEncInfo.package.blockSize,
-      this.objBlockKey.integrity.hmacKey,
+      BLOCK_KEY.INTEGRITY.HMAC_KEY,
     )
 
     return this.crypt(
@@ -270,7 +274,7 @@ export class XLSX_Cryptor {
       this.objEncInfo.package.hashAlgorithm,
       this.objEncInfo.package.salt,
       this.objEncInfo.package.blockSize,
-      this.objBlockKey.integrity.hmacValue,
+      BLOCK_KEY.INTEGRITY.HMAC_VALUE,
     )
 
     return this.crypt(
@@ -291,7 +295,7 @@ export class XLSX_Cryptor {
       this.objEncInfo.key.salt,
       this.objEncInfo.key.spinCount,
       this.objEncInfo.key.keyBits,
-      this.objBlockKey.key
+      BLOCK_KEY.KEY
     )
 
     return this.crypt(
@@ -312,7 +316,7 @@ export class XLSX_Cryptor {
       this.objEncInfo.key.salt,
       this.objEncInfo.key.spinCount,
       this.objEncInfo.key.keyBits,
-      this.objBlockKey.verifierHash.input
+      BLOCK_KEY.VERIFIER_HASH.INPUT
     )
 
     return this.crypt(
@@ -333,7 +337,7 @@ export class XLSX_Cryptor {
       this.objEncInfo.key.salt,
       this.objEncInfo.key.spinCount,
       this.objEncInfo.key.keyBits,
-      this.objBlockKey.verifierHash.value
+      BLOCK_KEY.VERIFIER_HASH.VALUE
     )
 
     return this.crypt(
