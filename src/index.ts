@@ -9,7 +9,7 @@ import {
   VERSION,
   PRIMARY,
   DATASPACE_MAP,
-  STRONT_ENCRYPTION_DATASPACE
+  STRONG_ENCRYPTION_DATASPACE
 } from './constants/resource'
 
 /**
@@ -103,7 +103,7 @@ export class XLSX_Cryptor {
 
     utils.cfb_add(cfbContainer, '\x06DataSpaces/DataSpaceMap', DATASPACE_MAP)
     utils.cfb_add(cfbContainer, '\x06DataSpaces/Version', VERSION)
-    utils.cfb_add(cfbContainer, '\x06DataSpaces/DataSpaceInfo/StrongEncryptionDataSpace', STRONT_ENCRYPTION_DATASPACE)
+    utils.cfb_add(cfbContainer, '\x06DataSpaces/DataSpaceInfo/StrongEncryptionDataSpace', STRONG_ENCRYPTION_DATASPACE)
     utils.cfb_add(cfbContainer, '\x06DataSpaces/TransformInfo/StrongEncryptionTransform/\x06Primary', PRIMARY)
 
     // 6. 결과 반환
