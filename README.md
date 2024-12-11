@@ -21,18 +21,21 @@ pnpm install excel-crypto
 # example
 
 import { XLSX_Cryptor } from "excel-crypto";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 
 const XlsxCryptor = new XLSX_Cryptor();
 
-// make Buffer
-const fileBuffer = readFileSync("./your_path");
+// 1. get Buffer
+const fileBuffer = readFileSync('./file_path');
 
-// get encrypt Buffer
+// 2. get encrypt Buffer
 const encryptFile = XlsxCryptor.encrypt({
   data: fileBuffer,
-  password: "your_password",
+  password: 'your_password',
 });
+
+// 3. create new file (.xlsx)
+writeFileSync('./new_path', encryptFile)
 ```
 
 ## Authors
